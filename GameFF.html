@@ -1,0 +1,340 @@
+<!doctype html>
+
+<head>
+    <title>FFVII</title>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="1300" height="800"></canvas>
+
+    <h1>FINAL FANTASY VII DEMAKE</h1>
+    <p>Cloud is once again suffering from Mako poisoning, but also schizophrenia!!! Help him by killing Sephiroth! (also
+        email me your credit and debit card info)</p>
+    <script>
+        var canvas, canvasContext, imageAssets;
+
+        window.onload = function () {
+            canvas = document.getElementById('gameCanvas');
+            canvasContext = canvas.getContext('2d');
+            imageAssets = loadImgAssets();
+
+            document.addEventListener("keydown", keyPressed);
+            document.addEventListener("keyup", keyReleased);
+
+            setInterval(mainloop, 1000 / 50);
+        }
+
+        var userName = '';
+        while (userName == '' || userName == null) {
+            userName = prompt('Enter Username')
+        }
+
+        var difficulty = '';
+        var pass = false;
+        while (pass == false) {
+            difficulty = prompt('Choose a difficulty', 'Normal or Hard');
+            if (difficulty == 'Normal' || difficulty == 'Hard') {
+                pass = true;
+            }
+        }
+        if (difficulty == 'Normal') {
+            var enemyYmax = 6;
+            var enemyYmin = 5;
+        }
+        if (difficulty == 'Hard') {
+            var enemyYmax = 300;
+            var enemyYmin = 299;
+        }
+
+        var gameRun = true;
+
+        //player variables
+        var playerXsource = 0;
+        var playerYsource = 0;
+        const PLAYER_SIZE = 20;
+        const PLAYER_WIDTH = 100;
+        var PLAYER_HEIGHT = 150;
+        var playerXpos = 600;
+        var playerYpos = 500;
+        var playerXspeed = 10;
+        var playerYspeed = 10;
+
+        //enemy variables
+        const ENEMY_WIDTH = 120;
+        const ENEMY_HEIGHT = 1500;
+        const ENEMY_SIZE = 0;
+        var enemyXpos = 0;
+        var enemyYpos = 0;
+        var enemyYspeed = 5;
+
+        // var enemyYmax = 0;
+        // var enemyYmin = 0;
+
+        // player spriteSheet variables
+        var playerSpriteArray = [];
+        const PLAYER_SPRITES = 6;
+        var playerSpriteNum = 0;
+        var playerSpriteSheetCols = 0;
+        var antiFrameRate = 0.1;
+
+
+        //player movement variables
+        var leftKeyPressed = false;
+        var rightKeyPressed = false;
+        var upKeyPressed = false;
+        var downKeyPressed = false;
+        var spaceKeyPressed = false;
+        const LEFT_KEY = 65;
+        const RIGHT_KEY = 68;
+        const UP_KEY = 87;
+        const DOWN_KEY = 83;
+        const SPACE_KEY = 32;
+
+        //player attack variables
+        var ATTACK_WIDTH = 0;
+        const ATTACK_HEIGHT = 220;
+
+        var attack = new Image();
+        attack.src = "Images/finishingtouch.png";
+
+        var enemyimg = new Image();
+        enemyimg.src = "Images/SEPHUROTH.png";
+
+        var canvasimg = new Image();
+        canvasimg.src = "Images/ff7midgar.jpg";
+
+        var gameover = new Image();
+        gameover.src = "Images/GameOverScreen.png";
+
+        var startingPos = true;
+        var enemyYdown = 0;
+
+        var score = 0;
+        var enemies = [];
+        var totalEnemies = 8;
+
+        //mainloop
+        function mainloop() {
+            if (gameRun == true) {
+                drawImg(canvasimg, 0, 0, canvas.width, canvas.height); //bg
+                drawSprite(imageAssets.player, playerXsource, playerYsource, PLAYER_WIDTH, PLAYER_HEIGHT,
+                    playerXpos,
+                    playerYpos, PLAYER_WIDTH, PLAYER_HEIGHT); //draws Player Image
+                drawImg(attack, playerXpos, playerYpos, ATTACK_WIDTH, ATTACK_HEIGHT); //draws Player attack image
+
+                playerAnimation();
+                playerMove();
+                playerAttack();
+                enemyMove();
+                drawEnemy();
+                hit();
+
+                if (startingPos) {
+                    for (i = 0; i < totalEnemies; i++) {
+                        makeEnemy();
+                    }
+                    startingPos = false;
+                }
+            } else {
+                drawImg(gameover, 0, 0, canvas.width, canvas.height);
+                playerYpos = canvas.height / 2;
+            }
+        }
+
+        //keypressed function for movement
+        function keyPressed(evt) {
+            if (evt.keyCode == LEFT_KEY) {
+                leftKeyPressed = true;
+            }
+            if (evt.keyCode == RIGHT_KEY) {
+                rightKeyPressed = true;
+            }
+            if (evt.keyCode == UP_KEY) {
+                upKeyPressed = true;
+            }
+            if (evt.keyCode == DOWN_KEY) {
+                downKeyPressed = true;
+            }
+
+            if (evt.keyCode == SPACE_KEY) {
+                spaceKeyPressed = true;
+            }
+        } // end of keyPressed func
+
+        //keyreleased func for movement
+        function keyReleased(evt) {
+            if (evt.keyCode == LEFT_KEY) {
+                leftKeyPressed = false;
+            }
+            if (evt.keyCode == RIGHT_KEY) {
+                rightKeyPressed = false;
+            }
+            if (evt.keyCode == UP_KEY) {
+                upKeyPressed = false;
+            }
+            if (evt.keyCode == DOWN_KEY) {
+                downKeyPressed = false;
+            }
+
+            if (evt.keyCode == SPACE_KEY) {
+                spaceKeyPressed = false;
+            }
+        } // end of keyReleased func
+
+
+        //player movement
+        function playerMove() {
+            playerXsource = playerSpriteArray[Math.floor(playerSpriteNum)][0];
+            playerYsource = playerSpriteArray[Math.floor(playerSpriteNum)][1];
+
+            if (upKeyPressed && playerYpos > 0) {
+                playerSpriteNum += antiFrameRate;
+                playerYpos -= playerYspeed;
+
+                if (playerSpriteNum > 3 || playerSpriteNum < 5) {
+                    playerSpriteNum = 5;
+                }
+            } //end up move && allows spritesheet to work, and player to move, stop player from going past the top of the screen
+
+            if (downKeyPressed && playerYpos < canvas.height - PLAYER_SIZE * 2) {
+                playerSpriteNum += antiFrameRate;
+                playerYpos += playerYspeed;
+
+                if (playerSpriteNum > 2 || playerSpriteNum < 0) {
+                    playerSpriteNum = 0;
+                }
+
+            } //end down move && allows spritesheet to work, and player to move, stop player from going past the bottom of the screen
+
+            if (leftKeyPressed) {
+                playerXpos -= playerXspeed;
+            }
+
+            if (rightKeyPressed) {
+                playerXpos += playerXspeed;
+            }
+        } // end
+
+        function playerAttack() {
+            if (spaceKeyPressed) {
+                ATTACK_WIDTH = 220;
+            } else {
+                ATTACK_WIDTH = 0;
+            }
+        }
+
+        function loadImgAssets() {
+            imgs = {};
+
+            imgs.player = new Image();
+            imgs.player.src = "Images/cloudsprite5.png";
+
+            return imgs;
+        }
+
+
+        for (i = 0; i < PLAYER_SPRITES; i++) {
+            playerSpriteArray[i] = new Array(2);
+            playerSpriteArray[i][0] = PLAYER_WIDTH * (i % 4);
+
+            if (i != 0 && i % 3 == 0) {
+                playerSpriteSheetCols++;
+            }
+            playerSpriteArray[i][1] = PLAYER_HEIGHT * playerSpriteSheetCols;
+            console.log(playerSpriteArray[i]);
+        }
+
+        function playerAnimation() {
+            playerSpriteNum += antiFrameRate;
+
+            if (playerSpriteNum > 3) {
+                playerSpriteNum = 5;
+            }
+
+            if (playerSpriteNum > 5) {
+                playerSpriteNum = 3;
+            }
+        }
+
+        function enemyMove() { //function for enemy movement
+            enemies.forEach(function (enemy) {
+
+                enemy.enemyYpos += enemy.enemyYspeed;
+                enemy.enemyYdown += enemy.enemyYspeed;
+
+                if (enemy.enemyYpos > canvas.height) {
+                    enemy.enemyYpos = 0;
+
+                    var enemyPos = Math.floor(Math.random() * 3) + 1;
+                    enemy.enemyXpos = Math.floor(Math.random() * (1300 - 1) - 1);
+                    enemy.enemyYspeed = Math.floor(Math.random() * (enemyYmax - enemyYmin)) + enemyYmin;
+                }
+            });
+        } //end of func
+
+        function makeEnemy() {
+            var enemyPos = Math.floor(Math.random() * 3) + 1;
+            const ENEMY_WIDTH = 120;
+            const ENEMY_HEIGHT = 150;
+            const ENEMY_SIZE = 0;
+            var enemyYpos = enemyPos * (canvas.height / 3);
+            var enemyXpos = 400;
+            var enemyYspeed = Math.floor(Math.random() * (enemyYmax - enemyYmin)) + enemyYmin;
+
+            var enemy = {
+                ENEMY_WIDTH: ENEMY_WIDTH,
+                ENEMY_HEIGHT: ENEMY_HEIGHT,
+                ENEMY_SIZE: ENEMY_SIZE,
+                enemyYpos: enemyYpos,
+                enemyXpos: enemyXpos,
+                enemyYspeed: enemyYspeed,
+            }
+
+            enemies.push(enemy);
+        } //end of func
+
+        function drawEnemy() {
+            enemies.forEach(function (enemy, i) {
+                drawImg(enemyimg, enemy.enemyXpos, enemy.enemyYpos, enemy.ENEMY_WIDTH, enemy.ENEMY_HEIGHT,
+                    'red'); // enemy
+            });
+        } //end of func
+
+        function hit() { //function for detecting when player touches something
+            enemies.forEach(function (enemy, i, array) {
+                if (enemy.enemyXpos + enemy.ENEMY_SIZE > playerXpos && enemy.enemyXpos < playerXpos +
+                    PLAYER_SIZE && enemy.enemyYpos + enemy.ENEMY_SIZE > playerYpos && enemy.enemyYpos <
+                    playerYpos + PLAYER_SIZE) {
+
+                    location.reload();
+                };
+
+                if (enemy.enemyYpos + enemy.ENEMY_HEIGHT > playerYpos && enemy.enemyYpos < playerYpos +
+                    PLAYER_SIZE && enemy.enemyXpos + enemy.ENEMY_WIDTH > playerXpos && enemy.enemyXpos <
+                    playerXpos + PLAYER_SIZE) {
+                    gameRun = false;
+                }
+
+                if (playerYpos + ATTACK_HEIGHT > enemy.enemyYpos && playerYpos < enemy.enemyYpos +
+                    ENEMY_SIZE && playerXpos + ATTACK_WIDTH > enemy.enemyXpos && playerXpos <
+                    enemy.enemyXpos + enemy.ENEMY_SIZE) {
+                    enemy.enemyYpos = 0;
+                    console.log('score');
+                }
+            });
+        } //end of func
+
+        function drawSprite(img, sX, sY, sW, sH, dX, dY, dW, dH) {
+            canvasContext.drawImage(img, sX, sY, sW, sH, dX, dY, dW, dH);
+        } //end of drawImg function for sprites
+
+        function drawImg(src, x, y, w, h) {
+            canvasContext.drawImage(src, x, y, w, h);
+        }
+
+        function colorRect(x, y, w, h, color) {
+            canvasContext.fillStyle = color;
+            canvasContext.fillRect(x, y, w, h);
+        }
+    </script>
+</body>
