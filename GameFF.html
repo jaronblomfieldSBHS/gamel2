@@ -24,18 +24,27 @@
             setInterval(mainloop, 1000 / 50);
         }
 
-        var userName = '';
-        while (userName == '' || userName == null) {
-            userName = prompt('Enter Username')
+        var username = '';
+        while (username == '' || username == null) {
+            username = prompt('Enter username')
         }
 
         var difficulty = '';
         var pass = false;
         while (pass == false) {
-            difficulty = prompt('Choose a difficulty', 'Normal or Hard');
-            if (difficulty == 'Normal' || difficulty == 'Hard') {
+            difficulty = prompt('Choose a difficulty', 'Easy, Normal or Hard');
+            if (difficulty == 'Easy' || difficulty == 'Normal' || difficulty == 'Hard') {
                 pass = true;
             }
+        }
+
+        var controls; {
+            controls = alert('WASD for Movement, and SPACEBAR to Attack');
+        }
+
+        if (difficulty == 'Easy') {
+            var enemyYmax = 2;
+            var enemyYmin = 1;
         }
         if (difficulty == 'Normal') {
             var enemyYmax = 6;
@@ -135,9 +144,13 @@
                     }
                     startingPos = false;
                 }
+
+                drawText('Score: ' + score, 20, 50, '50px Arial', 'white');
             } else {
                 drawImg(gameover, 0, 0, canvas.width, canvas.height);
                 playerYpos = canvas.height / 2;
+                drawText(username + ' Final Score: ' + score, canvas.width / 3, 60, '50px Arial',
+                    'white') //end of game screen, shows the username selected and the score
             }
         }
 
@@ -256,6 +269,12 @@
             }
         }
 
+        function borders() {
+            if (playerXpos > canvas.width) {
+                playerXpos => 0;
+            }
+        }
+
         function enemyMove() { //function for enemy movement
             enemies.forEach(function (enemy) {
 
@@ -319,10 +338,22 @@
                     ENEMY_SIZE && playerXpos + ATTACK_WIDTH > enemy.enemyXpos && playerXpos <
                     enemy.enemyXpos + enemy.ENEMY_SIZE) {
                     enemy.enemyYpos = 0;
-                    console.log('score');
+                    score++;
+                }
+
+                if (playerXpos > canvas.width){
+                    gameRun = false;
+                }
+                if (playerXpos < 0){
+                    gameRun = false;
                 }
             });
         } //end of func
+
+        function colorRect(x, y, w, h, color) {
+            canvasContext.fillStyle = color;
+            canvasContext.fillRect(x, y, w, h);
+        }
 
         function drawSprite(img, sX, sY, sW, sH, dX, dY, dW, dH) {
             canvasContext.drawImage(img, sX, sY, sW, sH, dX, dY, dW, dH);
@@ -332,9 +363,10 @@
             canvasContext.drawImage(src, x, y, w, h);
         }
 
-        function colorRect(x, y, w, h, color) {
-            canvasContext.fillStyle = color;
-            canvasContext.fillRect(x, y, w, h);
-        }
+        function drawText(msg, x, y, f, c) {
+            canvasContext.fillStyle = c;
+            canvasContext.font = f;
+            canvasContext.fillText(msg, x, y);
+        } //end of drawText
     </script>
 </body>
